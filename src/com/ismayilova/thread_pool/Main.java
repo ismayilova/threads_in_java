@@ -2,8 +2,10 @@ package com.ismayilova.thread_pool;
 
 import com.ismayilova.ThreadColors;
 import com.ismayilova.thread_pool.config.Task;
+import com.ismayilova.thread_pool.config.Task2;
 import com.ismayilova.thread_pool.config.ThreadPoolConfig;
 import com.sun.xml.internal.ws.api.model.wsdl.WSDLOutput;
+import javafx.util.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +15,7 @@ public class Main {
 
 public static void main(String[] args) {
 //    1) Vizivayem 1 raz dla polucheniya chisla zayavok v main thread
-    int count  = 3300;
+    int count  = 3330;
     int q = count%1000;
     int p= count/1000;
     int intCount = p*1000;
@@ -33,10 +35,19 @@ public static void main(String[] args) {
 
     splitted.add(stringList.subList(intCount,intCount+q));
 
-
-
-
 //    splitted.stream().forEach(System.out::println);
+
+
+
+    /*          int chunkSize = 1;
+
+    * Atomic valu usage
+    *  AtomicInteger counter = new AtomicInteger();
+    *  List<List<Order>> splited = (List<List<String>>) stringList.stream()//.parallel().
+                   .collect(Collectors.groupingBy(order -> counter.getAndDecrement()/chunkSize))
+                   .values();
+    * */
+
 
 
     ThreadPoolConfig threadPoolConfig = new ThreadPoolConfig(3);
@@ -45,11 +56,20 @@ public static void main(String[] args) {
 
     splitted.stream().parallel().forEach(list -> {
         executorService.execute(new Task(list,ThreadColors.CYAN));
-
-
     });
 
     executorService.shutdown();
+
+
+    ThreadPoolConfig threadPoolConfig2 =  new ThreadPoolConfig();
+    ExecutorService executorService2 = threadPoolConfig2.getExecutorService();
+
+    List<Pair> indexList =  createSplitIndex(count);
+    indexList.stream().parallel().forEach( el ->{
+                  executorService2.execute(new Task2((int)el.getKey() , (int)el.getValue()));
+    });
+    executorService2.shutdown();
+
 
 }
 
@@ -62,6 +82,23 @@ public static List<String> createList(int n){
     }
   return list;
 
+}
+
+
+public static List<Pair> createSplitIndex(int n){
+    int q = n%1000;
+    int p= n/1000;
+    int intCount = p*1000;
+    List<Pair> list = new ArrayList<>();
+
+
+    for(int i=0;i<p*1000;i+=1000){
+//        Pair<Integer,Integer> pair =  new Pair<>(i,i+1000);
+        list.add(new Pair<>(i,i+1000));
+    }
+    list.add(new Pair(intCount,intCount+q));
+
+    return list;
 }
 
  }
